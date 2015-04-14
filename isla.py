@@ -2,12 +2,24 @@
 #----
 # Programmed by: Matthew Warshaw
 # Date: 2015 April 13,
+# Done?: NOPE
 #----
+# NOTES
+# (1) Parsing will not work if user's tab complete does [nick], instead of
+#       [nick]:    I don't want to fix this, fix YOUR IRC client instead
+#-----
 # TO-DO
 # (1) alter the exception to write user input data to a JSON file
 # (2) think if I should put more in the join function
 # (3) This is where I would implement NLP (natural language processing)
 #-----------------------------------------------------------------------
+#
+# From Last time:
+#  Having issue with checking data to see if PRIVMSG appears
+#   -- data doesn't get parsed, but is directly sent to error.txt
+#
+#########################################################################
+
 
 import socket
 import json
@@ -80,12 +92,15 @@ class Bot:
         ''' Respond to PING, and general function for life of bot '''
         
         data = bytes.decode(self.irc.recv(4096))
+        
         if data.startswith("PING"):
-            self.send("PONG " + data.split(" ")[1])
-            
-        if("PRIVMSG ") in data:
+            self.send("PONG " + data.split(" ")[1])    
+        
+        # I found this method of checking when to parse to be the easiest
+        # it provides for a more rubst soltion then what I've thought of so far
+        if 'PRIVMSG' in data:
+            print(data)
             self.parse(data)
-            #print(data)
         else:
             pass
     
@@ -95,26 +110,61 @@ class Bot:
         data = data.rstrip('\r\n')
         data = data.split(":")
         del data[0]
-        msgRAW = data[1]   # I do this, so I can later write over this element
-        nick = data[0].split("!")[0] # retrives the sender's nick
-        chan = data[0].split(" ")[2]
         
         
-        print("inside parse:\t")
-        for stuff in data:
-            print(stuff)
+        # un-directed speech in IRC; no use of "[nick]:"
+        if(len(data) == 2):
+            msg = data[1]
+            chan = data[0].split(' ')[2]
+            fromNick = data[0].split(' ')[0].split('!')[0]
         
+        # in this case, a nick was directly referred to
+        elif(len(data) == 3):
+            msg = data[2]
+            chan = data[0].split(' ')[2]
+            fromNick = data[0].split(' ')[0].split('!')[0]
+            toNick = data[1]
+            print(fromNick)
+            print(toNick)
+           
+        
+        # error handling case, for life's little surprises 
+        else:
+            print("I'm fucking lost")
+            f=open("error.txt", "w+")
+            for item in data:
+                f.write("%s\r" %(item))
+            f.write("I don't know how to handle this\n")
+            f.close()
+            sys.exit("\n\nERROR: un-Parseable IRC data")
+            
+#########################################################################
+#################### OLD SHIT ###########################################
+#########################################################################
+        
+        #data = data.split(":")
+        #del data[0]
+        #msgRAW = data[1]   # I do this, so I can later write over this element
+        #nick = data[0].split("!")[0] # retrives the sender's nick
+        #chan = data[0].split(" ")[2]
+        
+        
+        #print("inside parse:\t")
+        #for stuff in data:
+        #    print(stuff)
+        
+        #print("data1\t" + data[1])
         # for parsing messages
         # I've been getting NameError and IndexError a couple of times
         #   I might put in a TRY : Except just in case
-        if data[1] == self.nick:
-            msg = msgRAW.split(" ")
+        #if data[1] == self.nick:
+        #    msg = msgRAW.split(" ")
             # this should mean the bot was addressed directly
-            if self.searchlist(msg,"hi"):
-                self.msg("hi %s", (nick))
+        #    if self.searchlist(msg,"hi"):
+        #        self.msg("hi %s", (nick))
                 # TODO (3)
-        
-        ################ old shit ############
+                
+                ## OLD ## 
         #data[0] = data[0].split(":")
         #data[0] = data[0][1].split("!") # makes the sender's nick selectable
         #nick = data[0][1]
