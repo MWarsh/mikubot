@@ -5,7 +5,7 @@
 #----
 # TO-DO
 # (1) alter the exception to write user input data to a JSON file
-#
+# (2) think if I should put more in the join function
 #
 #------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ class Bot:
             # reading in config data stored as a JSON file
             json_data = open("config.json").read()
 
-            # convert RAW data to python readable
+            # convert RAW JSON data to python readable
             data = json.loads(json_data)
 
 
@@ -36,38 +36,37 @@ class Bot:
                 self.port = input("Port: ")
                 self.chan = input("Chan: ")
                 # TO-DO (1)
-
             else:
                 sys.exit("BAKA!!")
 
+        # Bot's personal info
+        
+        self.nick = data['nick']
+        self.user = data['user']
+        self.network = data['network']  # be aware this a dict object
+        self.port = data['port']
+        self.chans = data['channels']
+        self.ircNetwork = (self.network['freenode'], data['port'])
 
+    def send(self, msg):
+        ''' Simplifies the sending of RAW data to IRC internets '''
+        self.irc.send(str.encode(msg + "\r\n"))
+         
+    def connect(self):
+        ''' To begin the connection procedure '''
+        self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.irc.connect(self.ircNetwork)
+        self.send("NICK %s", (self.nick))
+        self.send("USER %s %s %s :%s\r\n", (self.user, self.user, self.user, self.nick))
+        
+    def join(self, chan):
+        ''' I figured it would be better to have join as a separate function '''    
+        self.send("JOIN %s", chan)
+        # not sure what else to put here TODO (2)
 
-# Bot's personal info
+        # to keep connection to IRC alive
 
-nick = data['nick']
-user = data['user']
-network = data['network']  # be aware this a dict object
-port = data['port']
-chans = data['channels']
-
-connection_info = (network['freenode'], data['port'])
-
-# connection procedure
-
-irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-irc.connect(connection_info)
-irc.send(str.encode("NICK %s\r\n", (nick)))
-irc.send(str.encode("USER %s %s %s :%s\r\n", (user, user, user, nick)))
-irc.send("JOIN " + chans['moe'] + '\r\n')
-
-# to keep connection to IRC alive
-
-irc.send("PRIVMSG " + chans['moe'] + " : " "hi" + "\r\n")
-
-while True:
-    data = irc.recv(4096)
-
-    if data.find == "PONG":
-        irc.send("PONG")
-
-
+if __name__ == '__main__':
+    Isla = Bot()
+    Isla.connect()
+    
