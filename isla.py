@@ -6,13 +6,13 @@
 # TO-DO
 # (1) alter the exception to write user input data to a JSON file
 # (2) think if I should put more in the join function
-#
-#------------------------------------------------------------------
+# (3) This is where I would implement NLP (natural language processing)
+#-----------------------------------------------------------------------
 
 import socket
 import json
 import sys
-
+import ast
 
 class Bot:
     
@@ -56,17 +56,100 @@ class Bot:
         ''' To begin the connection procedure '''
         self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.irc.connect(self.ircNetwork)
-        self.send("NICK %s", (self.nick))
-        self.send("USER %s %s %s :%s\r\n", (self.user, self.user, self.user, self.nick))
+        self.send("NICK %s" % (self.nick))
+        self.send("USER %s %s %s :%s\r\n" % (self.user, self.user, self.user, self.nick))
+        self.join(self.chans['moe'])
+        
         
     def join(self, chan):
         ''' I figured it would be better to have join as a separate function '''    
-        self.send("JOIN %s", chan)
+        self.send("JOIN %s" % chan)
         # not sure what else to put here TODO (2)
 
         # to keep connection to IRC alive
 
+    def output(self, data):
+        ''' used for dev purposes, easily prints data to terminal '''
+        print(data)
+        
+    def msg(self, msg, chan):
+        ''' To make the sending of messages easier '''
+        self.send('PRIVMSG %s : %s' % (msg, self.chans['moe']))
+        
+    def listen(self):
+        ''' Respond to PING, and general function for life of bot '''
+        
+        data = bytes.decode(self.irc.recv(4096))
+        if data.startswith("PING"):
+            self.send("PONG " + data.split(" ")[1])
+            
+        if("PRIVMSG ") in data:
+            self.parse(data)
+            #print(data)
+        else:
+            pass
+    
+    def parse(self, data):
+        ''' To intrepet RAW IRC data, this is important '''
+        raw = data
+        data = data.rstrip('\r\n')
+        data = data.split(":")
+        del data[0]
+        msgRAW = data[1]   # I do this, so I can later write over this element
+        nick = data[0].split("!")[0] # retrives the sender's nick
+        chan = data[0].split(" ")[2]
+        
+        
+        print("inside parse:\t")
+        for stuff in data:
+            print(stuff)
+        
+        # for parsing messages
+        # I've been getting NameError and IndexError a couple of times
+        #   I might put in a TRY : Except just in case
+        if data[1] == self.nick:
+            msg = msgRAW.split(" ")
+            # this should mean the bot was addressed directly
+            if self.searchlist(msg,"hi"):
+                self.msg("hi %s", (nick))
+                # TODO (3)
+        
+        ################ old shit ############
+        #data[0] = data[0].split(":")
+        #data[0] = data[0][1].split("!") # makes the sender's nick selectable
+        #nick = data[0][1]
+        
+        #data[1] = data[0][1].split(" ")
+        #chan = data[1][3]
+        
+        
+        #data[1] = data[1].split(" ")
+        #msg = data[1]
+        #print(data)
+        
+    def searchlist(self, list, key):
+        for item in list:
+            if item.find(key):
+                return True
+            else:
+                return False
+    
+    
+        
+    def close(self):
+        self.msg("Bye everyone!!", self.chans['moe'])
+        self.irc.close()
+        sys.exit("\nProgram Terminated...")
+        
+        
+
+
 if __name__ == '__main__':
     Isla = Bot()
     Isla.connect()
-    
+    while True:
+        try:
+            Isla.listen()
+        except KeyboardInterrupt:
+            Isla.close()
+        
