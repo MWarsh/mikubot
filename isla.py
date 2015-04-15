@@ -134,7 +134,7 @@ class Bot:
             #print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}:{ms}".format(m=msgTime, 
             #                fn=fromNick, ms=msg))
             ###################################################################
-            print("->{m}".format(m=msg))
+            print("msg->{m}".format(m=msg))
             if "heh" in msg:
                 self.msg("heh\nheh\nheh heh", self.chans['moe'])
                 
@@ -152,7 +152,7 @@ class Bot:
             print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}: {tn} {ms}".format(
                 m=msgTime, fn=fromNick, tn=toNick, ms=msg))
             
-            
+            print("msg->{m}".format(m=msg))
             
             if "heh" in msg:
                 self.msg("heh", self.chans['moe'])
