@@ -136,7 +136,9 @@ class Bot:
             ###################################################################
             print("msg->{m}".format(m=msg))
             if "heh" in msg:
-                self.msg("heh\nheh\nheh heh", self.chans['moe'])
+                self.msg("heh", self.chans['moe'])
+                self.msg("heh", self.chans['moe'])
+                self.msg("heh heh", self.chans['moe'])
                 
             elif self.nick in msg:
                 self.msg("Who dare calls upon me", self.chans['moe'])
