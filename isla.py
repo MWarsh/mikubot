@@ -14,6 +14,7 @@
 # (3) This is where I would implement NLP (natural language processing)
 # (4) Change the class structure to allow for a "dev" mode, where this
 #       formatted output will then be printed
+# (5) Handle the case where the bot's nick is already taken
 #-----------------------------------------------------------------------
 #
 # From Last time:
@@ -63,8 +64,8 @@ class Bot:
         self.ircNetwork = (self.network['freenode'], data['port'])
 
     def send(self, msg):
-        ''' Simplifies the sending of RAW data to IRC internets '''
-        self.irc.send(str.encode(msg + "\r\n"))
+        ''' Simplifies the sending of encoded data to IRC internets '''
+        self.irc.send(str.encode("{m}\r\n".format(m=msg)))
          
     def connect(self):
         ''' To begin the connection procedure '''
@@ -89,13 +90,15 @@ class Bot:
         
     def msg(self, msg, chan):
         ''' To make the sending of messages easier '''
-        self.send('PRIVMSG %s : %s' % (msg, self.chans['moe']))
+        m = self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.chans['moe']))
+        print(m)
+        m
         
     def listen(self):
         ''' Respond to PING, and general function for life of bot '''
         
         data = bytes.decode(self.irc.recv(4096))
-        
+        print("raw->{d}".format(d=data))
         if data.startswith("PING"):
             self.send("PONG " + data.split(" ")[1])    
         
@@ -122,26 +125,22 @@ class Bot:
             msg = data[1]
             chan = data[0].split(' ')[2]
             fromNick = data[0].split(' ')[0].split('!')[0]
+            
             # for clean output to terminal for dev purposes  TODO (4)
-            #print("[%02i:%02i:%02i] %s: %s" % (
-            #    msgTime[3], msgTime[4], msgTime[5], fromNick, msg))
-            
-            
-            print("[%02i:%02i:%02i] %s: %s" % (
-                    msgTime[3], msgTime[4], msgTime[5], fromNick, msg))
-            
+            print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}: {ms}".format(
+                    m=msgTime, fn=fromNick, ms=msg))
             
             #################### mention from GROOT ###########################
-            #print("[{m[3]:02i}:{m[4]:02i}:{m[5]}] {fn}:{ms}".format(m=msgTime, 
+            #print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}:{ms}".format(m=msgTime, 
             #                fn=fromNick, ms=msg))
             ###################################################################
-            
-            if self.nick in msg:
-                self.msg("Who dare calls upon me", self.chans['moe'])
-            elif "heh" in msg:
+            print("->{m}".format(m=msg))
+            if "heh" in msg:
                 self.msg("heh\nheh\nheh heh", self.chans['moe'])
-
-        
+                
+            elif self.nick in msg:
+                self.msg("Who dare calls upon me", self.chans['moe'])
+     
         # in this case, a nick was directly referred to
         elif(len(data) == 3):
             msg = data[2]
@@ -149,14 +148,20 @@ class Bot:
             fromNick = data[0].split(' ')[0].split('!')[0]
             toNick = data[1]
             
-            # for clean output to terminal for dev purposes  TODO (4)
-            print("[%02i:%02i:%02i] %s:%s %s" % (msgTime[3], 
-                    msgTime[4], msgTime[5], fromNick, toNick, msg))
-                    
-            if self.nick in toNick:
-                self.msg("Hi", self.chans['moe'])
+            # for clean output to terminal for dev purposes  TODO (4)    
+            print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}: {tn} {ms}".format(
+                m=msgTime, fn=fromNick, tn=toNick, ms=msg))
+            
+            
+            
+            if "heh" in msg:
+                self.msg("heh", self.chans['moe'])
+                self.msg("heh", self.chans['moe'])
+                self.msg("heh heh", self.chans['moe'])
                 
-           
+                
+            elif self.nick in toNick:
+                self.msg("Hi", self.chans['moe'])      
         
         # error handling case, for life's little surprises 
         else:
@@ -165,7 +170,6 @@ class Bot:
             for item in data:
                 f.write("%s\r" %(item))
             f.write("I don't know how to handle this\n")
-            f.close()
             sys.exit("\n\nERROR: un-Parseable IRC data")
             
         

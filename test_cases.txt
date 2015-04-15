@@ -3,3 +3,4 @@ TEST CASES
 (2): :warsh!~warsh@unaffiliated/warsh PRIVMSG #undead-moe :Isla: how are you
 (3): :warsh!~warsh@unaffiliated/warsh PRIVMSG #undead-moe :I'm fine
 (4): :warsh!~warsh@unaffiliated/warsh PRIVMSG Isla :TIME   {and all the other CTCP stuff}
+(5): :verne.freenode.net 433 * Isla :Nickname is already in use.
