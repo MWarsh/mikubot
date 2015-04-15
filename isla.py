@@ -15,11 +15,14 @@
 # (4) Change the class structure to allow for a "dev" mode, where this
 #       formatted output will then be printed
 # (5) Handle the case where the bot's nick is already taken
+# (6) Take precaution to avoid flooding the network
+#       ideas:  (a) implement a queue to handle commands to bot
+#               (b) if queue becomes filled, delete all contents
+#               (c) wait for 5s (not definite) to respond to commands
+# (7) take care when the server issues a NOTICE
 #-----------------------------------------------------------------------
-#
-# From Last time:
-#  Having issue with checking data to see if PRIVMSG appears
-#   -- data doesn't get parsed, but is directly sent to error.txt
+# Issues:
+#   cleanup how the error file is made
 #
 #########################################################################
 from __future__ import print_function
@@ -54,8 +57,7 @@ class Bot:
             else:
                 sys.exit("BAKA!!")
 
-        # Bot's personal info
-        
+        # Bot's personal info 
         self.nick = data['nick']
         self.user = data['user']
         self.network = data['network']  # be aware this a dict object
@@ -90,9 +92,7 @@ class Bot:
         
     def msg(self, msg, chan):
         ''' To make the sending of messages easier '''
-        m = self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.chans['moe']))
-        print(m)
-        m
+        self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.chans['moe']))
         
     def listen(self):
         ''' Respond to PING, and general function for life of bot '''
@@ -104,9 +104,8 @@ class Bot:
         
         # I found this method of checking when to parse to be the easiest
         # it provides for a more rubst soltion then what I've thought of so far
-        #startingPoint = 'PRIVMSG %s'
         if 'PRIVMSG %s' % (self.chans['moe']) in data:
-            print(data)
+            #print(data)
             self.parse(data)
         else:
             pass
@@ -139,6 +138,7 @@ class Bot:
                 self.msg("heh", self.chans['moe'])
                 self.msg("heh", self.chans['moe'])
                 self.msg("heh heh", self.chans['moe'])
+                time.sleep(1)   # TODO (6)
                 
             elif self.nick in msg:
                 self.msg("Who dare calls upon me", self.chans['moe'])
@@ -160,6 +160,7 @@ class Bot:
                 self.msg("heh", self.chans['moe'])
                 self.msg("heh", self.chans['moe'])
                 self.msg("heh heh", self.chans['moe'])
+                time.sleep(1)   # TODO (6)
                 
                 
             elif self.nick in toNick:
@@ -168,7 +169,11 @@ class Bot:
         # error handling case, for life's little surprises 
         else:
             print("I'm fucking lost")
-            f=open("error.txt", "w+")
+            date = "{m[0]}/{m[1]}/{m[2]} - ({m[3]:02d};{m[4]:02d};{m[5]})".format(
+                m=msgTime)
+            f=open("error_{s}.rtf".format(s=date), "w")
+            #f=open("error_{m[0]} / {m[1]} / {m[2]}, -- [{m[3]:02d};{m[4]:02d};{m[5]}].txt".format(m=msgTime ), "w+")
+            
             for item in data:
                 f.write("%s\r" %(item))
             f.write("I don't know how to handle this\n")
