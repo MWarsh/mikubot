@@ -12,6 +12,8 @@
 # (1) alter the exception to write user input data to a JSON file
 # (2) think if I should put more in the join function
 # (3) This is where I would implement NLP (natural language processing)
+# (4) Change the class structure to allow for a "dev" mode, where this
+#       formatted output will then be printed
 #-----------------------------------------------------------------------
 #
 # From Last time:
@@ -19,12 +21,12 @@
 #   -- data doesn't get parsed, but is directly sent to error.txt
 #
 #########################################################################
-
+from __future__ import print_function
 
 import socket
 import json
 import sys
-import ast
+import time
 
 class Bot:
     
@@ -69,7 +71,8 @@ class Bot:
         self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.irc.connect(self.ircNetwork)
         self.send("NICK %s" % (self.nick))
-        self.send("USER %s %s %s :%s\r\n" % (self.user, self.user, self.user, self.nick))
+        self.send("USER %s %s %s :%s\r\n" % (
+                self.user, self.user, self.user, self.nick))
         self.join(self.chans['moe'])
         
         
@@ -98,7 +101,8 @@ class Bot:
         
         # I found this method of checking when to parse to be the easiest
         # it provides for a more rubst soltion then what I've thought of so far
-        if 'PRIVMSG' in data:
+        #startingPoint = 'PRIVMSG %s'
+        if 'PRIVMSG %s' % (self.chans['moe']) in data:
             print(data)
             self.parse(data)
         else:
@@ -111,12 +115,32 @@ class Bot:
         data = data.split(":")
         del data[0]
         
+        msgTime = time.localtime()
         
         # un-directed speech in IRC; no use of "[nick]:"
         if(len(data) == 2):
             msg = data[1]
             chan = data[0].split(' ')[2]
             fromNick = data[0].split(' ')[0].split('!')[0]
+            # for clean output to terminal for dev purposes  TODO (4)
+            #print("[%02i:%02i:%02i] %s: %s" % (
+            #    msgTime[3], msgTime[4], msgTime[5], fromNick, msg))
+            
+            
+            print("[%02i:%02i:%02i] %s: %s" % (
+                    msgTime[3], msgTime[4], msgTime[5], fromNick, msg))
+            
+            
+            #################### mention from GROOT ###########################
+            #print("[{m[3]:02i}:{m[4]:02i}:{m[5]}] {fn}:{ms}".format(m=msgTime, 
+            #                fn=fromNick, ms=msg))
+            ###################################################################
+            
+            if self.nick in msg:
+                self.msg("Who dare calls upon me", self.chans['moe'])
+            elif "heh" in msg:
+                self.msg("heh\nheh\nheh heh", self.chans['moe'])
+
         
         # in this case, a nick was directly referred to
         elif(len(data) == 3):
@@ -124,8 +148,14 @@ class Bot:
             chan = data[0].split(' ')[2]
             fromNick = data[0].split(' ')[0].split('!')[0]
             toNick = data[1]
-            print(fromNick)
-            print(toNick)
+            
+            # for clean output to terminal for dev purposes  TODO (4)
+            print("[%02i:%02i:%02i] %s:%s %s" % (msgTime[3], 
+                    msgTime[4], msgTime[5], fromNick, toNick, msg))
+                    
+            if self.nick in toNick:
+                self.msg("Hi", self.chans['moe'])
+                
            
         
         # error handling case, for life's little surprises 
@@ -138,44 +168,6 @@ class Bot:
             f.close()
             sys.exit("\n\nERROR: un-Parseable IRC data")
             
-#########################################################################
-#################### OLD SHIT ###########################################
-#########################################################################
-        
-        #data = data.split(":")
-        #del data[0]
-        #msgRAW = data[1]   # I do this, so I can later write over this element
-        #nick = data[0].split("!")[0] # retrives the sender's nick
-        #chan = data[0].split(" ")[2]
-        
-        
-        #print("inside parse:\t")
-        #for stuff in data:
-        #    print(stuff)
-        
-        #print("data1\t" + data[1])
-        # for parsing messages
-        # I've been getting NameError and IndexError a couple of times
-        #   I might put in a TRY : Except just in case
-        #if data[1] == self.nick:
-        #    msg = msgRAW.split(" ")
-            # this should mean the bot was addressed directly
-        #    if self.searchlist(msg,"hi"):
-        #        self.msg("hi %s", (nick))
-                # TODO (3)
-                
-                ## OLD ## 
-        #data[0] = data[0].split(":")
-        #data[0] = data[0][1].split("!") # makes the sender's nick selectable
-        #nick = data[0][1]
-        
-        #data[1] = data[0][1].split(" ")
-        #chan = data[1][3]
-        
-        
-        #data[1] = data[1].split(" ")
-        #msg = data[1]
-        #print(data)
         
     def searchlist(self, list, key):
         for item in list:
@@ -183,8 +175,6 @@ class Bot:
                 return True
             else:
                 return False
-    
-    
         
     def close(self):
         self.msg("Bye everyone!!", self.chans['moe'])
