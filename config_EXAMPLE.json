@@ -1,0 +1,13 @@
+{
+    "_comment": "Example JSON file for bot's config datum"
+    "nick":     "test",
+    "user":     "test_user",
+    "network":  {
+        "freenode":     "chat.freenode.net"
+        },
+    "port":     6667,
+    "channels": {
+        "free":   "#freenode",
+        "anime":         "#anime"
+        }
+}
