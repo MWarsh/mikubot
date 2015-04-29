@@ -99,11 +99,10 @@ class Bot:
         
         data = bytes.decode(self.irc.recv(4096))
         print("raw->{d}".format(d=data))
+        
         if data.startswith("PING"):
             self.send("PONG " + data.split(" ")[1])    
         
-        # I found this method of checking when to parse to be the easiest
-        # it provides for a more rubst soltion then what I've thought of so far
         if 'PRIVMSG %s' % (self.chans['moe']) in data:
             #print(data)
             self.parse(data)
@@ -112,7 +111,7 @@ class Bot:
     
     def parse(self, data):
         ''' To intrepet RAW IRC data, this is important '''
-        raw = data
+        raw = data # might be good to save, idk really...
         data = data.rstrip('\r\n')
         data = data.split(":")
         del data[0]
