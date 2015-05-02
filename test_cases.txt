@@ -1,8 +1,0 @@
-TEST CASES
-(1): :warsh!~warsh@unaffiliated/warsh PRIVMSG #undead-moe :Isla: hi
-(2): :warsh!~warsh@unaffiliated/warsh PRIVMSG #undead-moe :Isla: how are you
-(3): :warsh!~warsh@unaffiliated/warsh PRIVMSG #undead-moe :I'm fine
-(4): :warsh!~warsh@unaffiliated/warsh PRIVMSG Isla :TIME   {and all the other CTCP stuff}
-(5): :verne.freenode.net 433 * Isla :Nickname is already in use.
-(6): :sinisalo.freenode.net NOTICE Isla :*** Message to #undead-moe throttled due to flooding
-(7): :Iranican!~Iranican@cpe-76-183-96-146.tx.res.rr.com JOIN #undead-moe
