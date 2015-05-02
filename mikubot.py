@@ -23,6 +23,7 @@
 #-----------------------------------------------------------------------
 # Issues:
 #   cleanup how the error file is made
+#   ONLY USE SSL MODE (for now....)
 #
 #########################################################################
 from __future__ import print_function
@@ -31,6 +32,7 @@ import socket
 import json
 import sys
 import time
+import ssl
 
 class Bot:
     
@@ -38,32 +40,26 @@ class Bot:
         
         try:
             # reading in config data stored as a JSON file
-            json_data = open("config.json").read()
-
-            # convert RAW JSON data to python readable
-            data = json.loads(json_data)
-
-
+            json_data = open(config).read()
         except FileNotFoundError:
             print("ERROR: File not found")
             error_input=input("Would you like to create one? (yes or no): ")
             if error_input == 'yes':
-                self.nick = input("Nick: ")
-                self.user = input("User: ")
-                self.network = input("network domain: ")
-                self.port = input("Port: ")
-                self.chan = input("Chan: ")
+                self.config = {}
+                self.config['nick'] = input("Nick: ")
+                self.config['user'] = input("User: ")
+                self.config['ssl'] = input("SSL? (True or False): ")
+                self.config['network'] = input("network domain: ")
+                self.config['porn'] = input("Port: ")
+                self.config['chan'] = input("Chan: ")
                 # TO-DO (1)
             else:
                 sys.exit("BAKA!!")
 
         # Bot's personal info 
-        self.nick = data['nick']
-        self.user = data['user']
-        self.network = data['network']  # be aware this a dict object
-        self.port = data['port']
-        self.chans = data['channels']
-        self.ircNetwork = (self.network['freenode'], data['port'])
+        # convert RAW JSON data to python readable
+        self.config = json.loads(json_data) # data is a dict type
+        self.ircNetwork = (self.config['network']['freenode'], self.config['port'] )
 
     def send(self, msg):
         ''' Simplifies the sending of encoded data to IRC internets '''
@@ -71,28 +67,40 @@ class Bot:
          
     def connect(self):
         ''' To begin the connection procedure '''
-        self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.irc.connect(self.ircNetwork)
-        self.send("NICK %s" % (self.nick))
-        self.send("USER %s %s %s :%s\r\n" % (
-                self.user, self.user, self.user, self.nick))
-        self.join(self.chans['moe'])
+        
+        if self.config['ssl']:
+            self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.irc.connect(self.ircNetwork)
+            self.irc = ssl.wrap_socket(self.irc)
+        else:
+            self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.irc.connect(self.ircNetwork)
+        
+        self.send("NICK {n}".format(n=self.config['nick']))
+        self.send("USER {u} {u} {u} :{n}".format(u=self.config['user'], n=self.config['nick']))
+        self.join(self.config['chans']['moe'])
+        
+        self.msg("identify hello_there", "nickserv")
         
         
     def join(self, chan):
         ''' I figured it would be better to have join as a separate function '''    
-        self.send("JOIN %s" % chan)
+        self.send("JOIN {c}".format(c=chan))
         # not sure what else to put here TODO (2)
 
         # to keep connection to IRC alive
-
+    def part(self,chan):
+        ''' To tell the bot to leave a given irc channel'''
+        self.send("PART {c}".format(c=chan))
+        
+        
     def output(self, data):
         ''' used for dev purposes, easily prints data to terminal '''
         print(data)
         
     def msg(self, msg, chan):
         ''' To make the sending of messages easier '''
-        self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.chans['moe']))
+        self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.config['chans']['moe']))
         
     def listen(self):
         ''' Respond to PING, and general function for life of bot '''
@@ -103,7 +111,7 @@ class Bot:
         if data.startswith("PING"):
             self.send("PONG " + data.split(" ")[1])    
         
-        if 'PRIVMSG %s' % (self.chans['moe']) in data:
+        if 'PRIVMSG %s' % (self.config['chans']['moe']) in data:
             #print(data)
             self.parse(data)
         else:
@@ -134,13 +142,13 @@ class Bot:
             ###################################################################
             print("msg->{m}".format(m=msg))
             if "heh" in msg:
-                self.msg("heh", self.chans['moe'])
-                self.msg("heh", self.chans['moe'])
-                self.msg("heh heh", self.chans['moe'])
+                self.msg("heh", self.config['chans']['moe'])
+                self.msg("heh", self.config['chans']['moe'])
+                self.msg("heh heh", self.config['chans']['moe'])
                 time.sleep(1)   # TODO (6)
                 
-            elif self.nick in msg:
-                self.msg("Who dare calls upon me", self.chans['moe'])
+            elif self.config['nick'] in msg:
+                self.msg("Who dare calls upon me", self.config['chans']['moe'])
      
         # in this case, a nick was directly referred to
         elif(len(data) == 3):
@@ -156,14 +164,21 @@ class Bot:
             print("msg->{m}".format(m=msg))
             
             if "heh" in msg:
-                self.msg("heh", self.chans['moe'])
-                self.msg("heh", self.chans['moe'])
-                self.msg("heh heh", self.chans['moe'])
+                self.msg("heh", self.config['chans']['moe'])
+                self.msg("heh", self.config['chans']['moe'])
+                self.msg("heh heh", self.config['chans']['moe'])
                 time.sleep(1)   # TODO (6)
                 
                 
-            elif self.nick in toNick:
-                self.msg("Hi", self.chans['moe'])      
+            elif self.config['nick'] in toNick:
+                self.msg("Hi", self.config['chans']['moe'])
+                print(raw)
+                if "join" in msg:
+                    channel = msg.split(' ')[1]
+                    self.join(channel)
+                elif "part" in msg:
+                    channel = msg.split(' ')
+                    self.part(channel)
         
         # error handling case, for life's little surprises 
         else:
@@ -171,7 +186,8 @@ class Bot:
             date = "{m[0]}/{m[1]}/{m[2]} - ({m[3]:02d};{m[4]:02d};{m[5]})".format(
                 m=msgTime)
             f=open("error_{s}.rtf".format(s=date), "w")
-            #f=open("error_{m[0]} / {m[1]} / {m[2]}, -- [{m[3]:02d};{m[4]:02d};{m[5]}].txt".format(m=msgTime ), "w+")
+            # f=open("error_{m[0]} / {m[1]} / {m[2]}, -- 
+            #   [{m[3]:02d};{m[4]:02d};{m[5]}].txt".format(m=msgTime ), "w+")
             
             for item in data:
                 f.write("%s\r" %(item))
@@ -186,8 +202,8 @@ class Bot:
             else:
                 return False
         
-    def close(self):
-        self.msg("Bye everyone!!", self.chans['moe'])
+    def close(self, chan):
+        self.msg("Adieu", chan)
         self.irc.close()
         sys.exit("\nProgram Terminated...")
         
@@ -201,5 +217,5 @@ if __name__ == '__main__':
         try:
             Isla.listen()
         except KeyboardInterrupt:
-            Isla.close()
+            Isla.close(Isla.config['chans']['moe'])
         
