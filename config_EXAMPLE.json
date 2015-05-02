@@ -1,12 +1,13 @@
 {
-    "_comment": "Example JSON file for bot's config datum"
+    "_comment": "Example JSON file for bot's config datum; remove '_EXAMPLE' from production version",
     "nick":     "test",
     "user":     "test_user",
+    "ssl":      "True",
     "network":  {
         "freenode":     "chat.freenode.net"
         },
-    "port":     6667,
-    "channels": {
+    "port":     6697,
+    "chans": {
         "free":   "#freenode",
         "anime":         "#anime"
         }
