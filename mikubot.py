@@ -79,8 +79,9 @@ class Bot:
         self.send("NICK {n}".format(n=self.config['nick']))
         self.send("USER {u} {u} {u} :{n}".format(u=self.config['user'], n=self.config['nick']))
         self.join(self.config['chans']['moe'])
-        
-        self.msg("identify hello_there", "nickserv")
+
+        # for NICKSERV auth stuffs
+        self.send("PRIVMSG NICKSERV IDENTIFY {n} {p}".format(n=self.config['nick'],p='moe'))
         
         
     def join(self, chan):
@@ -165,7 +166,9 @@ class Bot:
             
             if "heh" in msg:
                 self.msg("heh", self.config['chans']['moe'])
+                time.sleep(.5)
                 self.msg("heh", self.config['chans']['moe'])
+                time.sleep(.5)
                 self.msg("heh heh", self.config['chans']['moe'])
                 time.sleep(1)   # TODO (6)
                 
@@ -179,6 +182,7 @@ class Bot:
                 elif "part" in msg:
                     channel = msg.split(' ')
                     self.part(channel)
+        
         
         # error handling case, for life's little surprises 
         else:
