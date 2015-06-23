@@ -28,16 +28,21 @@
 #########################################################################
 from __future__ import print_function
 
-import socket
-import json
-import sys
-import time
-import ssl
+import socket       # how to internets
+import json         # for config handling
+import sys          # every program needs some way to talk to their respective computer
+import time         # to help with error handling
+import ssl          # for SSL connections to IRC network
+import argparse     # beautiful handling of commandline options
+
 
 class Bot:
-    
+
     def __init__(self, config='config.json'):
-        
+
+        parser = argparse.ArgumentParser(description='A self-made IRC bot for random stuffs.')
+        parser.parse_args()
+
         try:
             # reading in config data stored as a JSON file
             json_data = open(config).read()
@@ -64,10 +69,10 @@ class Bot:
     def send(self, msg):
         ''' Simplifies the sending of encoded data to IRC internets '''
         self.irc.send(str.encode("{m}\r\n".format(m=msg)))
-         
+
     def connect(self):
         ''' To begin the connection procedure '''
-        
+
         if self.config['ssl']:
             self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.irc.connect(self.ircNetwork)
@@ -75,15 +80,15 @@ class Bot:
         else:
             self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.irc.connect(self.ircNetwork)
-        
+
         self.send("NICK {n}".format(n=self.config['nick']))
         self.send("USER {u} {u} {u} :{n}".format(u=self.config['user'], n=self.config['nick']))
         self.join(self.config['chans']['moe'])
 
         # for NICKSERV auth stuffs
         self.send("PRIVMSG NICKSERV IDENTIFY {n} {p}".format(n=self.config['nick'],p='moe'))
-        
-        
+
+
     def join(self, chan):
         ''' I figured it would be better to have join as a separate function '''    
         self.send("JOIN {c}".format(c=chan))
@@ -93,50 +98,50 @@ class Bot:
     def part(self,chan):
         ''' To tell the bot to leave a given irc channel'''
         self.send("PART {c}".format(c=chan))
-        
-        
+
+
     def output(self, data):
         ''' used for dev purposes, easily prints data to terminal '''
         print(data)
-        
+
     def msg(self, msg, chan):
         ''' To make the sending of messages easier '''
         self.send('PRIVMSG {c} :{m}'.format(m=msg, c=self.config['chans']['moe']))
-        
+
     def listen(self):
         ''' Respond to PING, and general function for life of bot '''
-        
+
         data = bytes.decode(self.irc.recv(4096))
         print("raw->{d}".format(d=data))
-        
+
         if data.startswith("PING"):
             self.send("PONG " + data.split(" ")[1])    
-        
+
         if 'PRIVMSG %s' % (self.config['chans']['moe']) in data:
             #print(data)
             self.parse(data)
         else:
             pass
-    
+
     def parse(self, data):
         ''' To intrepet RAW IRC data, this is important '''
         raw = data # might be good to save, idk really...
         data = data.rstrip('\r\n')
         data = data.split(":")
         del data[0]
-        
+
         msgTime = time.localtime()
-        
+
         # un-directed speech in IRC; no use of "[nick]:"
         if(len(data) == 2):
             msg = data[1]
             chan = data[0].split(' ')[2]
             fromNick = data[0].split(' ')[0].split('!')[0]
-            
+
             # for clean output to terminal for dev purposes  TODO (4)
             print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}: {ms}".format(
                     m=msgTime, fn=fromNick, ms=msg))
-            
+
             #################### mention from GROOT ###########################
             #print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}:{ms}".format(m=msgTime, 
             #                fn=fromNick, ms=msg))
@@ -147,23 +152,23 @@ class Bot:
                 self.msg("heh", self.config['chans']['moe'])
                 self.msg("heh heh", self.config['chans']['moe'])
                 time.sleep(1)   # TODO (6)
-                
+
             elif self.config['nick'] in msg:
                 self.msg("Who dare calls upon me", self.config['chans']['moe'])
-     
+
         # in this case, a nick was directly referred to
         elif(len(data) == 3):
             msg = data[2]
             chan = data[0].split(' ')[2]
             fromNick = data[0].split(' ')[0].split('!')[0]
             toNick = data[1]
-            
+
             # for clean output to terminal for dev purposes  TODO (4)    
             print("[{m[3]:02d}:{m[4]:02d}:{m[5]}] {fn}: {tn} {ms}".format(
                 m=msgTime, fn=fromNick, tn=toNick, ms=msg))
-            
+
             print("msg->{m}".format(m=msg))
-            
+
             if "heh" in msg:
                 self.msg("heh", self.config['chans']['moe'])
                 time.sleep(.5)
@@ -171,8 +176,8 @@ class Bot:
                 time.sleep(.5)
                 self.msg("heh heh", self.config['chans']['moe'])
                 time.sleep(1)   # TODO (6)
-                
-                
+
+
             elif self.config['nick'] in toNick:
                 self.msg("Hi", self.config['chans']['moe'])
                 print(raw)
@@ -182,8 +187,8 @@ class Bot:
                 elif "part" in msg:
                     channel = msg.split(' ')
                     self.part(channel)
-        
-        
+
+
         # error handling case, for life's little surprises 
         else:
             print("I'm fucking lost")
@@ -192,26 +197,26 @@ class Bot:
             f=open("error_{s}.rtf".format(s=date), "w")
             # f=open("error_{m[0]} / {m[1]} / {m[2]}, -- 
             #   [{m[3]:02d};{m[4]:02d};{m[5]}].txt".format(m=msgTime ), "w+")
-            
+
             for item in data:
                 f.write("%s\r" %(item))
             f.write("I don't know how to handle this\n")
             sys.exit("\n\nERROR: un-Parseable IRC data")
-            
-        
+
+
     def searchlist(self, list, key):
         for item in list:
             if item.find(key):
                 return True
             else:
                 return False
-        
+
     def close(self, chan):
         self.msg("Adieu", chan)
         self.irc.close()
         sys.exit("\nProgram Terminated...")
-        
-        
+
+
 
 
 if __name__ == '__main__':
@@ -222,4 +227,4 @@ if __name__ == '__main__':
             Isla.listen()
         except KeyboardInterrupt:
             Isla.close(Isla.config['chans']['moe'])
-        
+
